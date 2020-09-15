@@ -10,7 +10,7 @@ class FormRenderer {
 	private $mainText;
 	private $headerText;
 	private $buttons;
-	private $fields;
+	public $fields;
 	private $submitIsSet;
 	private $inputFieldPostfix;
 	private $validFieldTypes;
@@ -39,14 +39,15 @@ class FormRenderer {
 	private const SENTENCE_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ\.\,\:\"\']+$/i';
 
 	public function __construct($formName, $formId = null) {
-		if (!isset($formName)) {
-			throw new Exception("Form name is misisng!");
-		}
-		$formName = trim($formName);
-		$formName = str_replace(' ', '', $formName);
-		if (!ctype_alnum($formName)) {
-			throw new Exception("Form name is invalid!");
-		}
+		//if (!isset($formName)) {
+		//	throw new Exception("Form name is misisng!");
+		//}
+		//$formName = trim($formName);
+		//$formName = str_replace(' ', '', $formName);
+		//if (!ctype_alnum($formName)) {
+		//	throw new Exception("Form name is invalid!");
+		//}
+		$name = $this->checkValidId($formName, "Form Name"); 
 		if (isset($formId)) {
 			$formId = trim($formId);
 			$formId = str_replace(' ', '', $formId);
@@ -92,7 +93,7 @@ class FormRenderer {
 		if (isset($this->headerText)) {
 			throw new Exception("Header text is already set!");
 		}
-		$headerText = $this->checkValidString($headerText, "Main text"); 
+		$headerText = $this->checkValidString($headerText, "Header text"); 
 		$this->headerText = htmlspecialchars($headerText, ENT_QUOTES);
 	}
 
@@ -100,7 +101,7 @@ class FormRenderer {
 		
 		$label = $this->checkValidString($label, "Label"); 
 		
-		$name = $this->checkValidString($name, "Name"); 
+		$name = $this->checkValidId($name, "Name"); 
 
 		if (!isset($type)) {
 			throw new Exception("Type is misisng!");
@@ -124,13 +125,13 @@ class FormRenderer {
 	//This string is added to the non-button type input fields as an extra security feature.
 	//With this it can be check, whether the post request belongs to the actual user.
 	public function setInputFileldPostfix($postfix) {
-		if (isset($this->postfix)) {
+		if (isset($this->inputFieldPostfix)) {
 			throw new Exception("Input Field Postfix is already set!");
 		}
 		if (!ctype_alnum($postfix)) {
 			throw new Exception("Postfix must be alfanumerical!");
 		}
-		$this->postfix = $postfix;
+		$this->inputFieldPostfix = $postfix;
 	}
 
 	public function setSubmitButton($label, $url) {
@@ -180,8 +181,11 @@ class FormRenderer {
 		
 		echo '   <p>' . $this->mainText . '</p>';
 		echo '   <div>';
+		$postfix = "";
+		if (isset($this->inputFieldPostfix)) {
+			$postfix = '-' . $this->inputFieldPostfix;
+		}
 		foreach ($this->fields as $data) { 
-			
 			$key = array_keys($data);
 			$name = $key[0];
 			$details =$data[$name];
@@ -195,12 +199,12 @@ class FormRenderer {
 			
 			if ($type === self::FT_TEXTAREA) {
 				$value = $details[2];
-				echo '<div><textarea name= "' . $name . '" >' . $value . '</textarea></div>';
+				echo '<div><textarea name= "' . $name . $postfix . '" >' . $value . '</textarea></div>';
 			} else {
 				if (isset($details[2])) {
 					$value = ' value="' . $details[2] . '" ';
 				}
-				echo '<div><input type="' . $type . '" name= "' . $name . '" ' . $value . '></div>';
+				echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $value . '></div>';
 			}
 			echo '   </div>';
 			
@@ -209,11 +213,12 @@ class FormRenderer {
 		echo '   </div>';
 		$i=0;
 		echo '   <div>';
+		
 		foreach ($this->buttons as $button) {
 			if ($button[self::TYPE] === self::BT_SUBMIT) {
-				echo '      <input type= "submit" name="submit" value="' . $button[self::LABEL] . '" autofocus />';
+				echo '      <input type= "submit" name="submit' . $postfix . '" value="' . $button[self::LABEL] . '" autofocus />';
 			} else {
-				echo '      <input type= "button" name="button' . $i . '" value="' . $button[self::LABEL] . '" onClick="window.location=\'' . $button[self::URL] . '\';" />';
+				echo '      <input type= "button" name="button' . $i++ . $postfix . '" value="' . $button[self::LABEL] . '" onClick="window.location=\'' . $button[self::URL] . '\';" />';
 			}
 			
 		}
@@ -238,6 +243,18 @@ class FormRenderer {
 
 	private function checkValidSentences($string, $errorMessgaePrefix) {
 		return $this->checkValidStringImpl($string, $errorMessgaePrefix, self::SENTENCE_EXPRESSION);
+	}
+
+	private function checkValidId($string, $errorMessgaePrefix) {
+		if (!isset($string) || strlen(trim($string)) === 0 ) {
+			throw new Exception($errorMessgaePrefix . " is missing");
+		}
+		$string = trim($string);
+		
+		if (!ctype_alnum($string)) {
+			throw new Exception($errorMessgaePrefix . " must be alfanumerical!");
+		}
+		return $string;
 	}
 	private function checkValidStringImpl($string, $errorMessgaePrefix, $expression) {
 		if (!isset($string) || strlen(trim($string)) === 0 ) {
