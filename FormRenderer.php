@@ -35,6 +35,8 @@ class FormRenderer {
 	public const FT_TEXT = "text";
 	public const FT_TIME = "time";
 	public const FT_TEXTAREA = "textarea";
+	private const STRING_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ]+$/i';
+	private const SENTENCE_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ\.\,\:\"\']+$/i';
 
 	public function __construct($formName, $formId = null) {
 		if (!isset($formName)) {
@@ -82,10 +84,7 @@ class FormRenderer {
 		if (isset($this->mainText)) {
 			throw new Exception("Main text is already set!");
 		}
-		if (!isset($mainText) || strlen(trim($mainText)) === 0) {
-			throw new Exception("Main text is missing");
-		} 
-		$mainText = trim($mainText);
+		$mainText = $this->checkValidSentences($mainText, "Main text");
 		$this->mainText = htmlspecialchars($mainText, ENT_QUOTES);
 
 	}
@@ -93,31 +92,16 @@ class FormRenderer {
 		if (isset($this->headerText)) {
 			throw new Exception("Header text is already set!");
 		}
-		if (!isset($headerText) || strlen(trim($headerText)) === 0) {
-			throw new Exception("Header text is missing");
-		} 
-		$headerText = trim($headerText);
+		$headerText = $this->checkValidString($headerText, "Main text"); 
 		$this->headerText = htmlspecialchars($headerText, ENT_QUOTES);
-
 	}
 
 	public function addField($label, $name, $type, $value = null) {
-		if (!isset($label)) {
-			throw new Exception("Label is misisng!");
-		}
-		$label = trim($label);
-		$labelToCheck = str_replace(' ', '', $label);
-		if (!ctype_alnum($labelToCheck)) {
-			throw new Exception("Label must be alfanumerical!");
-		}
-		if (!isset($name)) {
-			throw new Exception("Name is misisng!");
-		}
-		$name = trim($name);
-		$nameToCheck = str_replace(' ', '', $name);
-		if (!ctype_alnum($nameToCheck)) {
-			throw new Exception("Name must be alfanumerical!");
-		}
+		
+		$label = $this->checkValidString($label, "Label"); 
+		
+		$name = $this->checkValidString($name, "Name"); 
+
 		if (!isset($type)) {
 			throw new Exception("Type is misisng!");
 		}
@@ -161,14 +145,8 @@ class FormRenderer {
 		$this->addOptionImpl($label, $url, self::BT_OPTION);
 	}
 	private function addOptionImpl ($label, $url, $type) {
-		if (!isset($label) || strlen($label) === 0) {
-			throw new Exception("Label is missing");
-		}
-		$label = trim($label);
-		$labelToCheck = str_replace(' ', '', $label);
-		if (!ctype_alnum($labelToCheck)) {
-			throw new Exception("Label must be alfanumerical!: " . $labelToCheck);
-		}
+		
+		$label = $this->checkValidString($label, "Label"); 
 		if (!isset($url) || strlen($url) === 0) {
 			throw new Exception("URL is missing");
 		}
@@ -202,17 +180,11 @@ class FormRenderer {
 		
 		echo '   <p>' . $this->mainText . '</p>';
 		echo '   <div>';
-		foreach ($this->fields as $data) { //  $name => 
-			//var_dump($data);
-			//var_dump($data[$name]);
-			//$details = $this->fields[$name];
+		foreach ($this->fields as $data) { 
 			
-			//var_dump($details);
 			$key = array_keys($data);
 			$name = $key[0];
 			$details =$data[$name];
-			//var_dump($key);
-			//var_dump($data[$key[0]]);
 			$label = $details[0];
 			$type = $details[1];
 			$value = "";
@@ -261,8 +233,22 @@ class FormRenderer {
 	}
 
 	private function checkValidString($string, $errorMessgaePrefix) {
-		if (!isset($string)) {
+		return $this->checkValidStringImpl($string, $errorMessgaePrefix, self::STRING_EXPRESSION);
+	}
+
+	private function checkValidSentences($string, $errorMessgaePrefix) {
+		return $this->checkValidStringImpl($string, $errorMessgaePrefix, self::SENTENCE_EXPRESSION);
+	}
+	private function checkValidStringImpl($string, $errorMessgaePrefix, $expression) {
+		if (!isset($string) || strlen(trim($string)) === 0 ) {
 			throw new Exception($errorMessgaePrefix . " is missing");
 		}
+		$string = trim($string);
+		$stringToCheck = str_replace(' ', '', $string);
+		
+		if (!preg_match($expression, $stringToCheck)) { 
+			throw new Exception($errorMessgaePrefix . " must be alfanumerical!");
+		} 
+		return $string;
 	}
 }
