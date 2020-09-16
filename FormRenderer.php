@@ -10,10 +10,12 @@ class FormRenderer {
 	private $mainText;
 	private $headerText;
 	private $buttons;
-	public $fields;
+	private $fields;
 	private $submitIsSet;
 	private $inputFieldPostfix;
 	private $validFieldTypes;
+	private $styleClasses;
+	private $validStyleSources;
 	private const BT_SUBMIT = "S";
 	private const BT_OPTION = "O";
 	private const URL = "U";
@@ -37,16 +39,15 @@ class FormRenderer {
 	public const FT_TEXTAREA = "textarea";
 	private const STRING_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ]+$/i';
 	private const SENTENCE_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ\.\,\:\"\']+$/i';
+	private const STYLESET_EXPRESSION = '/^[a-zA-Z0-9_\-\s]+$/i';
+	public const STYLE_FORM = "form";
+	public const STYLE_FORM_HEADER = "header";
+	public const STYLE_MAIN_TEXT = "mt";
+	public const STYLE_FIELD_AREA = "fields";
+	public const STYLE_BUTTON_AREA = "buttons";
 
 	public function __construct($formName, $formId = null) {
-		//if (!isset($formName)) {
-		//	throw new Exception("Form name is misisng!");
-		//}
-		//$formName = trim($formName);
-		//$formName = str_replace(' ', '', $formName);
-		//if (!ctype_alnum($formName)) {
-		//	throw new Exception("Form name is invalid!");
-		//}
+
 		$name = $this->checkValidId($formName, "Form Name"); 
 		if (isset($formId)) {
 			$formId = trim($formId);
@@ -60,6 +61,7 @@ class FormRenderer {
 		$this->formName = htmlspecialchars($formName, ENT_QUOTES);
 		$this->buttons = array();
 		$this->fields = array();
+		$this->styleClasses = array();
 		$this->submitIsSet = false;
 		$this->validFieldTypes = [
 			self::FT_CHECKBOX,
@@ -78,6 +80,13 @@ class FormRenderer {
 			self::FT_TEXT,
 			self::FT_TIME,
 			self::FT_TEXTAREA
+		];
+		$this->validStyleSources = [
+			self::STYLE_FORM,
+			self::STYLE_FORM_HEADER,
+			self::STYLE_MAIN_TEXT,
+			self::STYLE_FIELD_AREA,
+			self::STYLE_BUTTON_AREA
 		];
 	}
 
@@ -157,6 +166,32 @@ class FormRenderer {
 		array_push($this->buttons, $button);
 	}
 
+	public function setStyles($stylesArray) {
+
+		if (!isset($stylesArray)) {
+			throw new Exception("Styles array is missing");
+		}
+		if (!is_array($stylesArray)) {
+			throw new Exception("Function parameter must be an array");
+		}
+		if (empty($stylesArray)) {
+			throw new Exception("Styles array is empty!");
+		}
+
+		foreach ($stylesArray as $key => $value) {
+
+			if (!isset($key) || is_numeric($key)) {
+				throw new Exception("Style array has wrong format. <<Style source>> => <<classes>> format should be used.");
+			}
+			if (!in_array($key, $this->validStyleSources)) {
+				throw new Exception("Invalid style source!");
+			}
+			
+			$internalStyles = $this->checkValidStyleset($value, "Style");
+			$this->styleClasses[$key] = $internalStyles;
+		}
+	}
+
 	public function render() {
 		if (!isset($this->headerText)) {
 			throw new Exception("Header text is missing");
@@ -175,12 +210,16 @@ class FormRenderer {
 		if (isset($this->formId)) {
 			$id = ' id="' . $this->formId . '" ';
 		}
+		$formStyle = $this->getStyle(self::STYLE_FORM);
+		$formHeaderStyle = $this->getStyle(self::STYLE_FORM_HEADER);
+		$mainTextStyle = $this->getStyle(self::STYLE_MAIN_TEXT);
+		$fieldAreaStyle = $this->getStyle(self::STYLE_FIELD_AREA);
+		$buttonAreaStyle = $this->getStyle(self::STYLE_BUTTON_AREA);
+		echo '<form method="POST" action="' . $postData[self::URL] . '" name="' . $this->formName . '"' . $id . ' class="' . $formStyle . '">';
+		echo '   <h2 class="' . $formHeaderStyle . '">' . $this->headerText . '</h2>';
 		
-		echo '<form method="POST" action="' . $postData[self::URL] . '" name="' . $this->formName . '"' . $id . ' class="pixel500 center">';
-		echo '   <h2 class="input_header">' . $this->headerText . '</h2>';
-		
-		echo '   <p>' . $this->mainText . '</p>';
-		echo '   <div>';
+		echo '   <p class="' . $mainTextStyle . '">' . $this->mainText . '</p>';
+		echo '   <div class="' . $fieldAreaStyle . '">';
 		$postfix = "";
 		if (isset($this->inputFieldPostfix)) {
 			$postfix = '-' . $this->inputFieldPostfix;
@@ -212,7 +251,7 @@ class FormRenderer {
 		}
 		echo '   </div>';
 		$i=0;
-		echo '   <div>';
+		echo '   <div class="' . $buttonAreaStyle . '">';
 		
 		foreach ($this->buttons as $button) {
 			if ($button[self::TYPE] === self::BT_SUBMIT) {
@@ -244,6 +283,9 @@ class FormRenderer {
 	private function checkValidSentences($string, $errorMessgaePrefix) {
 		return $this->checkValidStringImpl($string, $errorMessgaePrefix, self::SENTENCE_EXPRESSION);
 	}
+	private function checkValidStyleset($string, $errorMessgaePrefix) {
+		return $this->checkValidStringImpl($string, $errorMessgaePrefix, self::STYLESET_EXPRESSION);
+	}
 
 	private function checkValidId($string, $errorMessgaePrefix) {
 		if (!isset($string) || strlen(trim($string)) === 0 ) {
@@ -267,5 +309,15 @@ class FormRenderer {
 			throw new Exception($errorMessgaePrefix . " must be alfanumerical!");
 		} 
 		return $string;
+	}
+
+	private function getStyle($source) {
+		if (isset($this->styleClasses[$source])) {
+			return $this->styleClasses[$source];
+		} else {
+			return "";
+		}
+		
+		
 	}
 }
