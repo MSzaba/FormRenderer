@@ -38,13 +38,14 @@ class FormRenderer {
 	public const FT_TIME = "time";
 	public const FT_TEXTAREA = "textarea";
 	private const STRING_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ]+$/i';
-	private const SENTENCE_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ\.\,\:\"\']+$/i';
+	private const SENTENCE_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ\.,:\"\'-_@\[\]&()–]+$/i';
 	private const STYLESET_EXPRESSION = '/^[a-zA-Z0-9_\-\s]+$/i';
 	public const STYLE_FORM = "form";
 	public const STYLE_FORM_HEADER = "header";
 	public const STYLE_MAIN_TEXT = "mt";
 	public const STYLE_FIELD_AREA = "fields";
 	public const STYLE_BUTTON_AREA = "buttons";
+	public const FIELD_POSTFIX_SEPARATOR = "-";
 
 	public function __construct($formName, $formId = null) {
 
@@ -188,7 +189,7 @@ class FormRenderer {
 			}
 			
 			$internalStyles = $this->checkValidStyleset($value, "Style");
-			$this->styleClasses[$key] = $internalStyles;
+			$this->styleClasses[$key] =  htmlspecialchars($internalStyles, ENT_QUOTES);
 		}
 	}
 
@@ -222,7 +223,7 @@ class FormRenderer {
 		echo '   <div class="' . $fieldAreaStyle . '">';
 		$postfix = "";
 		if (isset($this->inputFieldPostfix)) {
-			$postfix = '-' . $this->inputFieldPostfix;
+			$postfix = self::FIELD_POSTFIX_SEPARATOR . $this->inputFieldPostfix;
 		}
 		foreach ($this->fields as $data) { 
 			$key = array_keys($data);
@@ -306,6 +307,7 @@ class FormRenderer {
 		$stringToCheck = str_replace(' ', '', $string);
 		
 		if (!preg_match($expression, $stringToCheck)) { 
+			echo "the text: <b>" . $string . "</b>";
 			throw new Exception($errorMessgaePrefix . " must be alfanumerical!");
 		} 
 		return $string;
