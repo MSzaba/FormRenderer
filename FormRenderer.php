@@ -200,9 +200,9 @@ class FormRenderer {
 		if (!$this->submitIsSet) {
 			throw new Exception("Submit data is missing");
 		}
-		if (!isset($this->mainText) || strlen($this->mainText) === 0) {
-			throw new Exception("Main text is missing");
-		} 
+		//if (!isset($this->mainText) || strlen($this->mainText) === 0) {
+		//	throw new Exception("Main text is missing");
+		//} 
 		if (count($this->buttons) === 0) {
 			throw new Exception("Buttons are missing");
 		}
