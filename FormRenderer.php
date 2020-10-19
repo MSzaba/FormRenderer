@@ -9,6 +9,7 @@ class FormRenderer {
 	private $formId;
 	private $mainText;
 	private $headerText;
+	private $footerText;
 	private $buttons;
 	private $fields;
 	private $submitIsSet;
@@ -38,13 +39,14 @@ class FormRenderer {
 	public const FT_TIME = "time";
 	public const FT_TEXTAREA = "textarea";
 	private const STRING_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ]+$/i';
-	private const SENTENCE_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ\.,:\"\'-_@\[\]&()–]+$/i';
+	private const SENTENCE_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ\.,:\"\'-_@\[\]&()–!?]+$/i';
 	private const STYLESET_EXPRESSION = '/^[a-zA-Z0-9_\-\s]+$/i';
 	public const STYLE_FORM = "form";
 	public const STYLE_FORM_HEADER = "header";
 	public const STYLE_MAIN_TEXT = "mt";
 	public const STYLE_FIELD_AREA = "fields";
 	public const STYLE_BUTTON_AREA = "buttons";
+	public const STYLE_FORM_FOOTER = "footer";
 	public const FIELD_POSTFIX_SEPARATOR = "-";
 
 	public function __construct($formName, $formId = null) {
@@ -87,16 +89,21 @@ class FormRenderer {
 			self::STYLE_FORM_HEADER,
 			self::STYLE_MAIN_TEXT,
 			self::STYLE_FIELD_AREA,
-			self::STYLE_BUTTON_AREA
+			self::STYLE_BUTTON_AREA,
+			self::STYLE_FORM_FOOTER,
 		];
 	}
 
-	public function setMainText($mainText) {
+	public function setMainText($mainText, bool $containsHTML = null ) {
 		if (isset($this->mainText)) {
 			throw new Exception("Main text is already set!");
 		}
 		$mainText = $this->checkValidSentences($mainText, "Main text");
-		$this->mainText = htmlspecialchars($mainText, ENT_QUOTES);
+		if (isset($containsHTML) && $containsHTML) {
+			$this->mainText = $mainText;
+		} else {
+			$this->mainText = htmlspecialchars($mainText, ENT_QUOTES);
+		}
 
 	}
 	public function setHeaderText($headerText) {
@@ -105,6 +112,21 @@ class FormRenderer {
 		}
 		$headerText = $this->checkValidString($headerText, "Header text"); 
 		$this->headerText = htmlspecialchars($headerText, ENT_QUOTES);
+	}
+	public function setFooterText($footerText, bool $containsHTML = null) {
+		if (isset($this->footerText)) {
+			throw new Exception("Footer text is already set!");
+		}
+		error_log("Footer text is added");
+		$footerText = $this->checkValidSentences($footerText, "Footer text"); 
+		//$this->footerText = htmlspecialchars($footerText, ENT_QUOTES);
+		if (isset($containsHTML) && $containsHTML) {
+			$this->footerText = $footerText;
+		} else {
+			$this->footerText = htmlspecialchars($footerText, ENT_QUOTES);
+		}
+		
+		error_log("Footer text: " . $this->footerText);
 	}
 
 	public function addField($label, $name, $type, $value = null) {
@@ -216,41 +238,49 @@ class FormRenderer {
 		$mainTextStyle = $this->getStyle(self::STYLE_MAIN_TEXT);
 		$fieldAreaStyle = $this->getStyle(self::STYLE_FIELD_AREA);
 		$buttonAreaStyle = $this->getStyle(self::STYLE_BUTTON_AREA);
+		$footerAreaStyle = $this->getStyle(self::STYLE_FORM_FOOTER);
+
 		echo '<form method="POST" action="' . $postData[self::URL] . '" name="' . $this->formName . '"' . $id . ' class="' . $formStyle . '">';
 		echo '   <h2 class="' . $formHeaderStyle . '">' . $this->headerText . '</h2>';
 		
-		echo '   <p class="' . $mainTextStyle . '">' . $this->mainText . '</p>';
-		echo '   <div class="' . $fieldAreaStyle . '">';
+		if (isset($this->mainText)) {
+			echo '   <p class="' . $mainTextStyle . '">' . $this->mainText . '</p>';
+		}
 		$postfix = "";
 		if (isset($this->inputFieldPostfix)) {
 			$postfix = self::FIELD_POSTFIX_SEPARATOR . $this->inputFieldPostfix;
 		}
-		foreach ($this->fields as $data) { 
-			$key = array_keys($data);
-			$name = $key[0];
-			$details =$data[$name];
-			$label = $details[0];
-			$type = $details[1];
-			$value = "";
-			echo '<div>';
-			if ($type != self::FT_HIDDEN) {
-				echo '<div>'. $label . '</div>';
-			}
+		if (isset($this->fields) && count($this->fields) > 0) {
+			echo '   <div class="' . $fieldAreaStyle . '">';
 			
-			if ($type === self::FT_TEXTAREA) {
-				$value = $details[2];
-				echo '<div><textarea name= "' . $name . $postfix . '" >' . $value . '</textarea></div>';
-			} else {
-				if (isset($details[2])) {
-					$value = ' value="' . $details[2] . '" ';
+			foreach ($this->fields as $data) { 
+				$key = array_keys($data);
+				$name = $key[0];
+				$details =$data[$name];
+				$label = $details[0];
+				$type = $details[1];
+				$value = "";
+				echo '<div>';
+				if ($type != self::FT_HIDDEN) {
+					echo '<div>'. $label . ':</div>';
 				}
-				echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $value . '></div>';
+				
+				if ($type === self::FT_TEXTAREA) {
+					$value = $details[2];
+					echo '<div><textarea name= "' . $name . $postfix . '" >' . $value . '</textarea></div>';
+				} else {
+					if (isset($details[2])) {
+						$value = ' value="' . $details[2] . '" ';
+					}
+					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $value . '></div>';
+				}
+				echo '   </div>';
+				
+
 			}
 			echo '   </div>';
-			
-
 		}
-		echo '   </div>';
+		
 		$i=0;
 		echo '   <div class="' . $buttonAreaStyle . '">';
 		
@@ -263,6 +293,11 @@ class FormRenderer {
 			
 		}
 		echo '   </div>';
+		if (isset($this->footerText)) {
+			error_log("Rendering Footer text: " . $this->footerText);
+			echo '   <div class="' . $footerAreaStyle . '">' . $this->footerText . '</div>';
+		}
+		
 		echo '</form>';
 		
 	}
@@ -322,4 +357,6 @@ class FormRenderer {
 		
 		
 	}
+
+	
 }
