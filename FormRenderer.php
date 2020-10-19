@@ -90,7 +90,7 @@ class FormRenderer {
 			self::STYLE_MAIN_TEXT,
 			self::STYLE_FIELD_AREA,
 			self::STYLE_BUTTON_AREA,
-			self::STYLE_FORM_FOOTER,
+			self::STYLE_FORM_FOOTER
 		];
 	}
 
@@ -129,7 +129,7 @@ class FormRenderer {
 		error_log("Footer text: " . $this->footerText);
 	}
 
-	public function addField($label, $name, $type, $value = null) {
+	public function addField($label, $name, $type, $value = null, int $size = null) {
 		
 		$label = $this->checkValidString($label, "Label"); 
 		
@@ -151,7 +151,7 @@ class FormRenderer {
 		if (!in_array($type, $this->validFieldTypes)) {
 			throw new Exception("Invalid field type!");
 		}
-		array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue]]);
+		array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size]]);
 	}
 
 	//This string is added to the non-button type input fields as an extra security feature.
@@ -250,37 +250,20 @@ class FormRenderer {
 		if (isset($this->inputFieldPostfix)) {
 			$postfix = self::FIELD_POSTFIX_SEPARATOR . $this->inputFieldPostfix;
 		}
-		if (isset($this->fields) && count($this->fields) > 0) {
-			echo '   <div class="' . $fieldAreaStyle . '">';
-			
-			foreach ($this->fields as $data) { 
-				$key = array_keys($data);
-				$name = $key[0];
-				$details =$data[$name];
-				$label = $details[0];
-				$type = $details[1];
-				$value = "";
-				echo '<div>';
-				if ($type != self::FT_HIDDEN) {
-					echo '<div>'. $label . ':</div>';
-				}
-				
-				if ($type === self::FT_TEXTAREA) {
-					$value = $details[2];
-					echo '<div><textarea name= "' . $name . $postfix . '" >' . $value . '</textarea></div>';
-				} else {
-					if (isset($details[2])) {
-						$value = ' value="' . $details[2] . '" ';
-					}
-					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $value . '></div>';
-				}
-				echo '   </div>';
-				
-
-			}
-			echo '   </div>';
+		$this->renderFields($postfix,  $fieldAreaStyle);
+		$this->renderButtons($postfix, $buttonAreaStyle);
+		
+		
+		if (isset($this->footerText)) {
+			error_log("Rendering Footer text: " . $this->footerText);
+			echo '   <div class="' . $footerAreaStyle . '">' . $this->footerText . '</div>';
 		}
 		
+		echo '</form>';
+		
+	}
+
+	private function renderButtons($postfix, $buttonAreaStyle) {
 		$i=0;
 		echo '   <div class="' . $buttonAreaStyle . '">';
 		
@@ -293,13 +276,48 @@ class FormRenderer {
 			
 		}
 		echo '   </div>';
-		if (isset($this->footerText)) {
-			error_log("Rendering Footer text: " . $this->footerText);
-			echo '   <div class="' . $footerAreaStyle . '">' . $this->footerText . '</div>';
+	} 
+
+	private function renderFields($postfix,  $fieldAreaStyle) {
+		if (isset($this->fields) && count($this->fields) > 0) {
+			echo '   <div class="' . $fieldAreaStyle . '">';
+			
+			foreach ($this->fields as $data) { 
+				$key = array_keys($data);
+				$name = $key[0];
+				$details =$data[$name];
+				$label = $details[0];
+				$type = $details[1];
+				$value = "";
+				$size = $details[3];
+				echo '<div>';
+				if ($type != self::FT_HIDDEN) {
+					echo '<div>'. $label . ':</div>';
+				}
+				$sizeToPrint = "";
+				
+				
+				if ($type === self::FT_TEXTAREA) {
+					$value = $details[2];
+					if (isset($size)) {
+						$sizeToPrint = ' cols="'. $size . '" ';
+					}
+					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . ' >' . $value . '</textarea></div>';
+				} else {
+					if (isset($details[2])) {
+						$value = ' value="' . $details[2] . '" ';
+					}
+					if (isset($size)) {
+						$sizeToPrint = ' size="'. $size . '" ';
+					}
+					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $value . $sizeToPrint .'></div>';
+				}
+				echo '   </div>';
+				
+
+			}
+			echo '   </div>';
 		}
-		
-		echo '</form>';
-		
 	}
 
 	private function getPostData() {
