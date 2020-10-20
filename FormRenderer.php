@@ -17,11 +17,13 @@ class FormRenderer {
 	private $validFieldTypes;
 	private $styleClasses;
 	private $validStyleSources;
+	private $validFieldParameters;
 	private const BT_SUBMIT = "S";
 	private const BT_OPTION = "O";
 	private const URL = "U";
 	private const LABEL = "L";
 	private const TYPE = "T";
+	//Field types
 	public const FT_CHECKBOX = "checkbox";
 	public const FT_COLOR = "color";
 	public const FT_DATE = "date";
@@ -38,9 +40,11 @@ class FormRenderer {
 	public const FT_TEXT = "text";
 	public const FT_TIME = "time";
 	public const FT_TEXTAREA = "textarea";
+	//String expression to che the input
 	private const STRING_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ]+$/i';
 	private const SENTENCE_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ\.,:\"\'-_@\[\]&()–!?]+$/i';
 	private const STYLESET_EXPRESSION = '/^[a-zA-Z0-9_\-\s]+$/i';
+	//style constants
 	public const STYLE_FORM = "form";
 	public const STYLE_FORM_HEADER = "header";
 	public const STYLE_MAIN_TEXT = "mt";
@@ -48,6 +52,11 @@ class FormRenderer {
 	public const STYLE_BUTTON_AREA = "buttons";
 	public const STYLE_FORM_FOOTER = "footer";
 	public const FIELD_POSTFIX_SEPARATOR = "-";
+	//field parameters
+	public const FP_VALUE = "value";
+	public const FP_SIZE = "size";
+	public const FP_TITLE = "title";
+
 
 	public function __construct($formName, $formId = null) {
 
@@ -92,6 +101,11 @@ class FormRenderer {
 			self::STYLE_BUTTON_AREA,
 			self::STYLE_FORM_FOOTER
 		];
+		$this->validFieldParameters = [
+			self::FP_TITLE,
+			self::FP_SIZE,
+			self::FP_VALUE
+		];
 	}
 
 	public function setMainText($mainText, bool $containsHTML = null ) {
@@ -117,19 +131,18 @@ class FormRenderer {
 		if (isset($this->footerText)) {
 			throw new Exception("Footer text is already set!");
 		}
-		error_log("Footer text is added");
+		
 		$footerText = $this->checkValidSentences($footerText, "Footer text"); 
-		//$this->footerText = htmlspecialchars($footerText, ENT_QUOTES);
+		
 		if (isset($containsHTML) && $containsHTML) {
 			$this->footerText = $footerText;
 		} else {
 			$this->footerText = htmlspecialchars($footerText, ENT_QUOTES);
 		}
 		
-		error_log("Footer text: " . $this->footerText);
 	}
 
-	public function addField($label, $name, $type, $value = null, int $size = null) {
+	public function addField($label, $name, $type, $optionalParameters = null) {
 		
 		$label = $this->checkValidString($label, "Label"); 
 		
@@ -141,17 +154,36 @@ class FormRenderer {
 		$internalName = htmlspecialchars($name, ENT_QUOTES);
 		$internalLabel = htmlspecialchars($label, ENT_QUOTES);
 		$internalValue = "";
-		if (isset($value)) {
-			$value = trim($value);
-			$internalValue = htmlspecialchars($value, ENT_QUOTES);
+		$size = null;
+		$title = "";
+		if (isset($optionalParameters)) {
+			if (isset($optionalParameters[self::FP_VALUE])) {
+				$value = trim($optionalParameters[self::FP_VALUE]);
+				$internalValue = htmlspecialchars($value, ENT_QUOTES);
+			}
+			if (isset($optionalParameters[self::FP_TITLE])) {
+				$value = trim($optionalParameters[self::FP_TITLE]);
+				$title = htmlspecialchars($value, ENT_QUOTES);
+			}
+			if (isset($optionalParameters[self::FP_SIZE])) {
+				$value = trim($optionalParameters[self::FP_SIZE]);
+				
+				if (!is_numeric($value)) {
+					
+					throw new Exception("invalid size parameter!");
+				}
+				$size = $value;
+			}
 		}
+
+		
 		if (array_key_exists($internalName, $this->fields)) {
 			throw new Exception("Field has already added to the set!");
 		}
 		if (!in_array($type, $this->validFieldTypes)) {
 			throw new Exception("Invalid field type!");
 		}
-		array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size]]);
+		array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size, $title]]);
 	}
 
 	//This string is added to the non-button type input fields as an extra security feature.
@@ -255,7 +287,7 @@ class FormRenderer {
 		
 		
 		if (isset($this->footerText)) {
-			error_log("Rendering Footer text: " . $this->footerText);
+			
 			echo '   <div class="' . $footerAreaStyle . '">' . $this->footerText . '</div>';
 		}
 		
@@ -290,19 +322,24 @@ class FormRenderer {
 				$type = $details[1];
 				$value = "";
 				$size = $details[3];
+				
 				echo '<div>';
 				if ($type != self::FT_HIDDEN) {
-					echo '<div>'. $label . ':</div>';
+					echo '<label for="' . $name . $postfix . '">'. $label . ':</label>';
 				}
 				$sizeToPrint = "";
-				
+				$title = $details[4];
+				$titleToPrint = "";
+				if (isset($title)) {
+					$titleToPrint = ' title="'. $title . '"';
+				}
 				
 				if ($type === self::FT_TEXTAREA) {
 					$value = $details[2];
 					if (isset($size)) {
 						$sizeToPrint = ' cols="'. $size . '" ';
 					}
-					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . ' >' . $value . '</textarea></div>';
+					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . ' >' . $value . '</textarea></div>';
 				} else {
 					if (isset($details[2])) {
 						$value = ' value="' . $details[2] . '" ';
@@ -310,7 +347,8 @@ class FormRenderer {
 					if (isset($size)) {
 						$sizeToPrint = ' size="'. $size . '" ';
 					}
-					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $value . $sizeToPrint .'></div>';
+					
+					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $value . $sizeToPrint . $titleToPrint . '></div>';
 				}
 				echo '   </div>';
 				
@@ -360,7 +398,7 @@ class FormRenderer {
 		$stringToCheck = str_replace(' ', '', $string);
 		
 		if (!preg_match($expression, $stringToCheck)) { 
-			echo "the text: <b>" . $string . "</b>";
+			
 			throw new Exception($errorMessgaePrefix . " must be alfanumerical!");
 		} 
 		return $string;
