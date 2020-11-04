@@ -368,31 +368,31 @@ class FormRenderer {
 		return null;
 	}
 
-	private function checkValidString($string, $errorMessgaePrefix) {
-		return $this->checkValidStringImpl($string, $errorMessgaePrefix, self::STRING_EXPRESSION);
+	private function checkValidString($string, $errorMessagePrefix) {
+		return $this->checkValidStringImpl($string, $errorMessagePrefix, self::STRING_EXPRESSION);
 	}
 
-	private function checkValidSentences($string, $errorMessgaePrefix) {
-		return $this->checkValidStringImpl($string, $errorMessgaePrefix, self::SENTENCE_EXPRESSION);
+	private function checkValidSentences($string, $errorMessagePrefix) {
+		return $this->checkValidStringImpl($string, $errorMessagePrefix, self::SENTENCE_EXPRESSION);
 	}
-	private function checkValidStyleset($string, $errorMessgaePrefix) {
-		return $this->checkValidStringImpl($string, $errorMessgaePrefix, self::STYLESET_EXPRESSION);
+	private function checkValidStyleset($string, $errorMessagePrefix) {
+		return $this->checkValidStringImpl($string, $errorMessagePrefix, self::STYLESET_EXPRESSION);
 	}
 
-	private function checkValidId($string, $errorMessgaePrefix) {
+	private function checkValidId($string, $errorMessagePrefix) {
 		if (!isset($string) || strlen(trim($string)) === 0 ) {
-			throw new Exception($errorMessgaePrefix . " is missing");
+			throw new Exception($errorMessagePrefix . " is missing");
 		}
 		$string = trim($string);
 		
 		if (!ctype_alnum($string)) {
-			throw new Exception($errorMessgaePrefix . " must be alfanumerical!");
+			throw new Exception($errorMessagePrefix . " must be alfanumerical!");
 		}
 		return $string;
 	}
-	private function checkValidStringImpl($string, $errorMessgaePrefix, $expression) {
+	private function checkValidStringImpl($string, $errorMessagePrefix, $expression) {
 		if (!isset($string) || strlen(trim($string)) === 0 ) {
-			throw new Exception($errorMessgaePrefix . " is missing");
+			throw new Exception($errorMessagePrefix . " is missing");
 		}
 		$string = trim($string);
 		$stringToCheck = str_replace(' ', '', $string);
