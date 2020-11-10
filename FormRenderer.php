@@ -399,7 +399,7 @@ class FormRenderer {
 		
 		if (!preg_match($expression, $stringToCheck)) { 
 			
-			throw new Exception($errorMessgaePrefix . " must be alfanumerical!");
+			throw new Exception($errorMessagePrefix . " must be alfanumerical!");
 		} 
 		return $string;
 	}
