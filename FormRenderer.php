@@ -56,6 +56,7 @@ class FormRenderer {
 	public const FP_VALUE = "value";
 	public const FP_SIZE = "size";
 	public const FP_TITLE = "title";
+	public const FP_READONLY = "readonly";
 
 
 	public function __construct($formName, $formId = null) {
@@ -104,7 +105,9 @@ class FormRenderer {
 		$this->validFieldParameters = [
 			self::FP_TITLE,
 			self::FP_SIZE,
-			self::FP_VALUE
+			self::FP_VALUE,
+			self::FP_READONLY
+
 		];
 	}
 
@@ -156,6 +159,7 @@ class FormRenderer {
 		$internalValue = "";
 		$size = null;
 		$title = "";
+		$readonly = false;
 		if (isset($optionalParameters)) {
 			if (isset($optionalParameters[self::FP_VALUE])) {
 				$value = trim($optionalParameters[self::FP_VALUE]);
@@ -170,9 +174,16 @@ class FormRenderer {
 				
 				if (!is_numeric($value)) {
 					
-					throw new Exception("invalid size parameter!");
+					throw new Exception("Invalid size parameter: " . $value);
 				}
 				$size = $value;
+			}
+			if (isset($optionalParameters[self::FP_READONLY])) {
+				$value = (bool) trim($optionalParameters[self::FP_READONLY]);
+				//if ($value != true || $value != false) {
+				//	throw new Exception("Invalid readonly parameter: " . print_r($value, true));
+				//}
+				$readonly = $value;
 			}
 		}
 
@@ -183,7 +194,7 @@ class FormRenderer {
 		if (!in_array($type, $this->validFieldTypes)) {
 			throw new Exception("Invalid field type!");
 		}
-		array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size, $title]]);
+		array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size, $title, $readonly]]);
 	}
 
 	//This string is added to the non-button type input fields as an extra security feature.
@@ -239,7 +250,7 @@ class FormRenderer {
 				throw new Exception("Style array has wrong format. <<Style source>> => <<classes>> format should be used.");
 			}
 			if (!in_array($key, $this->validStyleSources)) {
-				throw new Exception("Invalid style source!");
+				throw new Exception("Invalid style source: " . $key);
 			}
 			
 			$internalStyles = $this->checkValidStyleset($value, "Style");
@@ -322,16 +333,32 @@ class FormRenderer {
 				$type = $details[1];
 				$value = "";
 				$size = $details[3];
-				
-				echo '<div>';
+				$readonly  = $details[4];
+
+				$hiddenStyle = "";
+				if ($type === self::FT_HIDDEN) {
+					$hiddenStyle = 'style="display: none;"';
+				}
+				echo '<div ' . $hiddenStyle . ' >';
 				if ($type != self::FT_HIDDEN) {
 					echo '<label for="' . $name . $postfix . '">'. $label . ':</label>';
 				}
 				$sizeToPrint = "";
 				$title = $details[4];
 				$titleToPrint = "";
+				$readonlyToPrint = "";
 				if (isset($title)) {
 					$titleToPrint = ' title="'. $title . '"';
+				}
+				if (isset($readonly)) {
+					if ($type === self::FT_CHECKBOX) {
+						//Checkbox readonly has not too much effect disabled should be used
+						$readonlyToPrint = ' disabled ';
+					} else {
+						$readonlyToPrint = ' readonly ';
+					}
+					
+					
 				}
 				
 				if ($type === self::FT_TEXTAREA) {
@@ -339,7 +366,7 @@ class FormRenderer {
 					if (isset($size)) {
 						$sizeToPrint = ' cols="'. $size . '" ';
 					}
-					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . ' >' . $value . '</textarea></div>';
+					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . ' >' . $value . '</textarea></div>';
 				} else {
 					if (isset($details[2])) {
 						$value = ' value="' . $details[2] . '" ';
@@ -348,7 +375,7 @@ class FormRenderer {
 						$sizeToPrint = ' size="'. $size . '" ';
 					}
 					
-					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $value . $sizeToPrint . $titleToPrint . '></div>';
+					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $value . $sizeToPrint . $titleToPrint . $readonlyToPrint  . '></div>';
 				}
 				echo '   </div>';
 				
