@@ -40,6 +40,7 @@ class FormRenderer {
 	public const FT_TEXT = "text";
 	public const FT_TIME = "time";
 	public const FT_TEXTAREA = "textarea";
+	public const FT_SELECT = "select";
 	//String expression to che the input
 	private const STRING_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ]+$/i';
 	private const SENTENCE_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ\.,:\"\'-_@\[\]&()–!?]+$/i';
@@ -57,6 +58,7 @@ class FormRenderer {
 	public const FP_SIZE = "size";
 	public const FP_TITLE = "title";
 	public const FP_READONLY = "readonly";
+	public const FP_SELECT_OPTIONS = "selectoptions";
 
 
 	public function __construct($formName, $formId = null) {
@@ -92,7 +94,8 @@ class FormRenderer {
 			self::FT_SEARCH,
 			self::FT_TEXT,
 			self::FT_TIME,
-			self::FT_TEXTAREA
+			self::FT_TEXTAREA,
+			self::FT_SELECT
 		];
 		$this->validStyleSources = [
 			self::STYLE_FORM,
@@ -106,8 +109,8 @@ class FormRenderer {
 			self::FP_TITLE,
 			self::FP_SIZE,
 			self::FP_VALUE,
-			self::FP_READONLY
-
+			self::FP_READONLY,
+			self::FP_SELECT_OPTIONS
 		];
 	}
 
@@ -160,6 +163,7 @@ class FormRenderer {
 		$size = null;
 		$title = "";
 		$readonly = false;
+		$selectoptions = null;
 		if (isset($optionalParameters)) {
 			if (isset($optionalParameters[self::FP_VALUE])) {
 				$value = trim($optionalParameters[self::FP_VALUE]);
@@ -185,6 +189,27 @@ class FormRenderer {
 				//}
 				$readonly = $value;
 			}
+			if (isset($optionalParameters[self::FP_SELECT_OPTIONS])) {
+				$parameterValue = $optionalParameters[self::FP_SELECT_OPTIONS];
+				if ($parameterValue == null || !is_array($parameterValue)) {
+					throw new Exception("Select Options parameter is not an array!");
+				}
+				if (count($parameterValue) == 0) {
+					throw new Exception("Select Options parameter array is empty!");
+				}
+				$processedParameters = array();
+				foreach ($parameterValue as $key => $value) {
+					if (!ctype_alnum($key)) {
+						throw new Exception("Option name is not alfanumeric: " . $key);
+					}
+					//if (!ctype_alnum($value)) {
+					//	throw new Exception("Option value for key " . $key . " is not alfanumeric: " . $value);
+					//}
+					
+					$processedParameters[htmlspecialchars($key, ENT_QUOTES)] = htmlspecialchars($value, ENT_QUOTES);
+				}
+				$selectoptions = $processedParameters;
+			}
 		}
 
 		
@@ -194,7 +219,7 @@ class FormRenderer {
 		if (!in_array($type, $this->validFieldTypes)) {
 			throw new Exception("Invalid field type!");
 		}
-		array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size, $title, $readonly]]);
+		array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions]]);
 	}
 
 	//This string is added to the non-button type input fields as an extra security feature.
@@ -331,9 +356,11 @@ class FormRenderer {
 				$details =$data[$name];
 				$label = $details[0];
 				$type = $details[1];
-				$value = "";
+				$value = $details[2] ?? "";
 				$size = $details[3];
-				$readonly  = $details[4];
+				$title = $details[4];
+				$readonly  = $details[5];
+				$selectOptions = $details[6];
 
 				$hiddenStyle = "";
 				if ($type === self::FT_HIDDEN) {
@@ -344,13 +371,13 @@ class FormRenderer {
 					echo '<label for="' . $name . $postfix . '">'. $label . ':</label>';
 				}
 				$sizeToPrint = "";
-				$title = $details[4];
+				
 				$titleToPrint = "";
 				$readonlyToPrint = "";
 				if (isset($title)) {
 					$titleToPrint = ' title="'. $title . '"';
 				}
-				if (isset($readonly)) {
+				if ($readonly) {
 					if ($type === self::FT_CHECKBOX) {
 						//Checkbox readonly has not too much effect disabled should be used
 						$readonlyToPrint = ' disabled ';
@@ -362,20 +389,25 @@ class FormRenderer {
 				}
 				
 				if ($type === self::FT_TEXTAREA) {
-					$value = $details[2];
 					if (isset($size)) {
 						$sizeToPrint = ' cols="'. $size . '" ';
 					}
-					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . ' >' . $value . '</textarea></div>';
+					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . ' >' . $value . '</textarea><div>';
+				} else if ($type === self::FT_SELECT) {
+					echo '<div><select name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . ' >';
+					foreach ($selectOptions as $optionValue => $optionText) {
+						echo '<option value="' . $optionValue . '" >' . $optionText . '</option>';
+					}
+					echo '</select><div>';
 				} else {
-					if (isset($details[2])) {
-						$value = ' value="' . $details[2] . '" ';
+					if (isset($value)) {
+						$valueToPrint = ' value="' . $value . '" ';
 					}
 					if (isset($size)) {
 						$sizeToPrint = ' size="'. $size . '" ';
 					}
 					
-					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $value . $sizeToPrint . $titleToPrint . $readonlyToPrint  . '></div>';
+					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $valueToPrint . $sizeToPrint . $titleToPrint . $readonlyToPrint  . '></div>';
 				}
 				echo '   </div>';
 				
