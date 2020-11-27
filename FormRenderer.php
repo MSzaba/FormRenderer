@@ -60,7 +60,6 @@ class FormRenderer {
 	public const FP_READONLY = "readonly";
 	public const FP_SELECT_OPTIONS = "selectoptions";
 
-
 	public function __construct($formName, $formId = null) {
 
 		$name = $this->checkValidId($formName, "Form Name"); 
@@ -199,9 +198,10 @@ class FormRenderer {
 				}
 				$processedParameters = array();
 				foreach ($parameterValue as $key => $value) {
-					if (!ctype_alnum($key)) {
-						throw new Exception("Option name is not alfanumeric: " . $key);
-					}
+					//if (!ctype_alnum($key)) {
+					//	error_log("FormRenderer::addField  Parameters: " . print_r($parameterValue, true));
+					//	throw new Exception("Option name is not alfanumeric: " . $key);
+					//}
 					//if (!ctype_alnum($value)) {
 					//	throw new Exception("Option value for key " . $key . " is not alfanumeric: " . $value);
 					//}
@@ -364,7 +364,7 @@ class FormRenderer {
 
 				$hiddenStyle = "";
 				if ($type === self::FT_HIDDEN) {
-					$hiddenStyle = 'style="display: none;"';
+					$hiddenStyle = 'style="display: none; visibility: hidden;"';
 				}
 				echo '<div ' . $hiddenStyle . ' >';
 				if ($type != self::FT_HIDDEN) {
@@ -398,7 +398,7 @@ class FormRenderer {
 					foreach ($selectOptions as $optionValue => $optionText) {
 						echo '<option value="' . $optionValue . '" >' . $optionText . '</option>';
 					}
-					echo '</select><div>';
+					echo '</select></div>';
 				} else {
 					if (isset($value)) {
 						$valueToPrint = ' value="' . $value . '" ';
