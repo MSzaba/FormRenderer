@@ -392,7 +392,7 @@ class FormRenderer {
 					if (isset($size)) {
 						$sizeToPrint = ' cols="'. $size . '" ';
 					}
-					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . ' >' . $value . '</textarea><div>';
+					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . ' >' . $value . '</textarea></div>';
 				} else if ($type === self::FT_SELECT) {
 					echo '<div><select name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . ' >';
 					foreach ($selectOptions as $optionValue => $optionText) {
