@@ -285,7 +285,6 @@ class FormRenderer {
 	}
 
 	public function setValue($fieldName, $value) {
-		error_log("FormRenderer.setValue || BEFORE field name: " . $fieldName . " fields: " . print_r($this->fields, true));
 		if (!array_key_exists($fieldName, $this->fields)) {
 			error_log("FormRenderer.setValue || Unknown field name: " . $fieldName);
 			throw new Exception("Unknown field name: " . $fieldName);
@@ -300,9 +299,6 @@ class FormRenderer {
 		//}
 		$fieldParameters[2] = $value;
 		$this->fields[$fieldName] = $fieldParameters;
-		
-		error_log("FormRenderer.setValue || AFTER field name: " . $fieldName . " fields: " . print_r($this->fields, true));
-
 	}
 
 	public function render() {
@@ -415,9 +411,17 @@ class FormRenderer {
 					}
 					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . ' >' . $value . '</textarea></div>';
 				} else if ($type === self::FT_SELECT) {
+
 					echo '<div><select name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . ' >';
 					foreach ($selectOptions as $optionValue => $optionText) {
-						echo '<option value="' . $optionValue . '" >' . $optionText . '</option>';
+						
+						if (isset($value) && $value === $optionValue) {
+							$selected = " selected "; 
+							
+						} else {
+							$selected = "";
+						}
+						echo '<option value="' . $optionValue . '" ' . $selected . ' >' . $optionText . '</option>';
 					}
 					echo '</select></div>';
 				} else if ($type === self::FT_DATETIME_LOCAL) {
