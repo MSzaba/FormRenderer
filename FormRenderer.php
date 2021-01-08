@@ -219,7 +219,8 @@ class FormRenderer {
 		if (!in_array($type, $this->validFieldTypes)) {
 			throw new Exception("Invalid field type!");
 		}
-		array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions]]);
+		//array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions]]);
+		$this->fields[$internalName] = [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions];
 	}
 
 	//This string is added to the non-button type input fields as an extra security feature.
@@ -283,10 +284,31 @@ class FormRenderer {
 		}
 	}
 
-	public function render() {
-		if (!isset($this->headerText)) {
-			throw new Exception("Header text is missing");
+	public function setValue($fieldName, $value) {
+		error_log("FormRenderer.setValue || BEFORE field name: " . $fieldName . " fields: " . print_r($this->fields, true));
+		if (!array_key_exists($fieldName, $this->fields)) {
+			error_log("FormRenderer.setValue || Unknown field name: " . $fieldName);
+			throw new Exception("Unknown field name: " . $fieldName);
 		}
+		
+		$fieldParameters = $this->fields[$fieldName];
+		$valueToSet = null;
+		//if (is_string($value)) {
+		//	$fieldParameters[2] = htmlspecialchars($value);
+		//} else {
+		//	
+		//}
+		$fieldParameters[2] = $value;
+		$this->fields[$fieldName] = $fieldParameters;
+		
+		error_log("FormRenderer.setValue || AFTER field name: " . $fieldName . " fields: " . print_r($this->fields, true));
+
+	}
+
+	public function render() {
+		//if (!isset($this->headerText)) {
+		//	throw new Exception("Header text is missing");
+		//}
 		if (!$this->submitIsSet) {
 			throw new Exception("Submit data is missing");
 		}
@@ -309,7 +331,9 @@ class FormRenderer {
 		$footerAreaStyle = $this->getStyle(self::STYLE_FORM_FOOTER);
 
 		echo '<form method="POST" action="' . $postData[self::URL] . '" name="' . $this->formName . '"' . $id . ' class="' . $formStyle . '">';
-		echo '   <h2 class="' . $formHeaderStyle . '">' . $this->headerText . '</h2>';
+		if (isset($this->headerText)) {
+			echo '   <h2 class="' . $formHeaderStyle . '">' . $this->headerText . '</h2>';
+		}
 		
 		if (isset($this->mainText)) {
 			echo '   <p class="' . $mainTextStyle . '">' . $this->mainText . '</p>';
@@ -350,10 +374,7 @@ class FormRenderer {
 		if (isset($this->fields) && count($this->fields) > 0) {
 			echo '   <div class="' . $fieldAreaStyle . '">';
 			
-			foreach ($this->fields as $data) { 
-				$key = array_keys($data);
-				$name = $key[0];
-				$details =$data[$name];
+			foreach ($this->fields as $name => $details) { 
 				$label = $details[0];
 				$type = $details[1];
 				$value = $details[2] ?? "";
@@ -399,6 +420,16 @@ class FormRenderer {
 						echo '<option value="' . $optionValue . '" >' . $optionText . '</option>';
 					}
 					echo '</select></div>';
+				} else if ($type === self::FT_DATETIME_LOCAL) {
+					$valueToPrint = "";
+					if (isset($value) && $value instanceof DateTime) {
+						$valueToPrint = ' value="' . $value->format('Y-m-d\TH:i:s')  . '" ';
+					}
+					if (isset($size)) {
+						$sizeToPrint = ' size="'. $size . '" ';
+					}
+					
+					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $valueToPrint . $sizeToPrint . $titleToPrint . $readonlyToPrint  . '></div>';
 				} else {
 					if (isset($value)) {
 						$valueToPrint = ' value="' . $value . '" ';
