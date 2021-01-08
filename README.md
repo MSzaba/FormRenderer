@@ -4,16 +4,16 @@ PHP reusable from renderer widget.
 It is part of a hobby porject. Since it a reusable component, and independent from the other parts of the hobby project it makes sense to publish it.
 
 ## The main features are:
-------------------------
-- Set header text of the form
-- Set the main message
-- Add fileds to the form
+
+- Set header text of the form (optional)
+- Set the main message (optional)
+- Add fields to the form (optional)
 - Add buttons to the form
-- Set a security related form field name postfix
+- Set a security related form field name postfix (optional)
 
 
 ### Example:
-----------
+
 ```
 $usernameFiledOptions = [
 	FormRenderer::FP_SIZE => 50,
@@ -48,7 +48,7 @@ $fr->render();
 On the first line we create the form Renderer object.
 
 ### Parameters:
-------------
+
 - $formName - will be used as form name
 - $formId - (optional) will be used as form Id
 
@@ -57,7 +57,7 @@ The method setMainText provide an area to print some text above the fields.
 The method setStyles can be used to set the styles of the differnet elements of the form.
 
 ## The following constants can be used to specify the area:
---------------------------------------------------------
+
 - FormRenderer::STYLE_FORM
 - FormRenderer::STYLE_FORM_HEADER
 - FormRenderer::STYLE_MAIN_TEXT
@@ -75,14 +75,14 @@ The setInputFileldPostfix method can add a postfix for every input field. This c
 We use the addField three times here. First we add a hidden field to contain an XSRF token to protect the page, then a field for username nad password.
 
 ## The parameters of the addField methos are the following:
---------------------------------------------------------
+
 - $label - Label of the field
 - $name - Name of the field
 - $type -Type tof the field
 - $optionalParameters -Some optional parameters can be set for the fields, this array contains them
 
 ## The valid field types are the following:
------------------------------------------
+
 - FormRenderer::FT_CHECKBOX
 - FormRenderer::FT_COLOR
 - FormRenderer::FT_DATE
@@ -113,7 +113,7 @@ The fill the related HTML parameters of the tag. In the example all 3 are used
 After a button area there is a footer text area. Here a link was placed to terms of usage.
 
 ### The method setFooterText parameters are the following:
-------------------------------
+
 - $footerText - the text to be printed
 - $containsHTML - (Optional) if true, the special characters won't be escaped
 
@@ -121,7 +121,7 @@ Then the render method do the actual rendering process.
 
 
 ## Using dropdown list in forms:
-------------------------------
+
 
 The field type FT_SELECT allows usage of dropdown list. In this case the FP_SELECT_OPTIONS parmaeter should be passed to the Form Renderer.
 Here is an example:
@@ -136,4 +136,18 @@ $options = [
 ];
 $fr = new FormRenderer("testForm", "testFormId");
 $fr->addField("Label 1", "Name1", FormRenderer::FT_SELECT, $options);
+```
+## Set the field values directly
+
+So far the only option was to prefill the field content is using the `FormRenderer::FP_VALUE` option.
+Now the `setValue` method also can be called. Example:
+```
+$cp = new FormRenderer("testForm", "testFormId");
+$cp->addField("Label 1", "Name1", FormRenderer::FT_TEXT);
+$cp->addField("Label 2", "Name2", FormRenderer::FT_TEXT);
+
+$cp->setSubmitButton("Submit", "/index.php");
+$cp->setValue("Name1", "ValueTo Display");
+
+$cp->render();
 ```
