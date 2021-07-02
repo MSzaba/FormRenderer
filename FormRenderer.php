@@ -45,6 +45,18 @@ class FormRenderer {
 	private const STRING_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ]+$/i';
 	private const SENTENCE_EXPRESSION = '/^[a-zA-Z0-9öÖüÜóÓőŐúÚéÉáÁűŰíÍäÄ\.,:\"\'-_@\[\]&()–!?]+$/i';
 	private const STYLESET_EXPRESSION = '/^[a-zA-Z0-9_\-\s]+$/i';
+
+	private const ACCEPT_TYPES = [
+		"audio/",
+		"video/",
+		"image/",
+		"application/",
+		"font/",
+		"model/",
+		"text/"
+	];
+
+
 	//style constants
 	public const STYLE_FORM = "form";
 	public const STYLE_FORM_HEADER = "header";
@@ -59,6 +71,8 @@ class FormRenderer {
 	public const FP_TITLE = "title";
 	public const FP_READONLY = "readonly";
 	public const FP_SELECT_OPTIONS = "selectoptions";
+	public const FP_ACCEPT= "accept";
+	public const FP_REQUIRED = "required";
 
 	public function __construct($formName, $formId = null) {
 
@@ -109,7 +123,9 @@ class FormRenderer {
 			self::FP_SIZE,
 			self::FP_VALUE,
 			self::FP_READONLY,
-			self::FP_SELECT_OPTIONS
+			self::FP_SELECT_OPTIONS,
+			self::FP_ACCEPT,
+			self::FP_REQUIRED
 		];
 	}
 
@@ -147,6 +163,48 @@ class FormRenderer {
 		
 	}
 
+	protected function validateAcceptParameter($accept) {
+		if ($accept == null || strlen($accept) == 0) {
+			return false;
+		}
+		if (strpos($accept, ",") !== FALSE) {
+			$elements = explode(",", $accept);
+			foreach($elements as $element) {
+				$result = $this->validAcceptParameterPart($element);
+				error_log("FormRenderer.validateAcceptParameter | result: " . $result);
+				if (!$result) {
+					return false;
+				}
+			}
+			return true;
+		} else {
+			return  $this->validAcceptParameterPart($accept);
+		}
+		
+	}
+	
+	private function validAcceptParameterPart($part) {
+		error_log("FormRenderer.validAcceptParameterPart | part: " . $part);
+		foreach (self::ACCEPT_TYPES as $type) {
+			error_log("FormRenderer.validAcceptParameterPart | type: " . $type);
+			if ($this->startsWith($part, $type)) {
+				return true;
+			}
+		}
+		if ($this->startsWith($part, ".") ) {
+			$substr = substr($part, 1);
+			error_log("FormRenderer.validAcceptParameterPart | substring: " . $substr);
+			return  !preg_match('/\s/',$substr); 
+		}
+		return false;
+	}
+
+	//utility method
+	function startsWith( $haystack, $needle ) {
+		$length = strlen( $needle );
+		return substr( $haystack, 0, $length ) === $needle;
+    }
+
 	public function addField($label, $name, $type, $optionalParameters = null) {
 		
 		$label = $this->checkValidString($label, "Label"); 
@@ -163,10 +221,15 @@ class FormRenderer {
 		$title = "";
 		$readonly = false;
 		$selectoptions = null;
+		$accept = "";
+		$required = false;
+
+
 		if (isset($optionalParameters)) {
 			if (isset($optionalParameters[self::FP_VALUE])) {
 				$value = trim($optionalParameters[self::FP_VALUE]);
 				$internalValue = htmlspecialchars($value, ENT_QUOTES);
+				//error_log("FormRenderer.addField | value: " . $value . " internalValue: " . $internalValue);
 			}
 			if (isset($optionalParameters[self::FP_TITLE])) {
 				$value = trim($optionalParameters[self::FP_TITLE]);
@@ -210,6 +273,21 @@ class FormRenderer {
 				}
 				$selectoptions = $processedParameters;
 			}
+			if(isset($optionalParameters[self::FP_ACCEPT])) {
+				$accept = $optionalParameters[self::FP_ACCEPT];
+				if ($accept == null || strlen($accept) == 0) {
+					throw new Exception("Accept parameter value is missing!");
+				}
+				if (!$this->validateAcceptParameter($accept)) {
+					throw new Exception("Accept parameter value is invalid: " . $accept );
+				}
+			}
+			if(isset($optionalParameters[self::FP_REQUIRED])) {
+				$required = $optionalParameters[self::FP_REQUIRED];
+				if ($required == null) {
+					throw new Exception("Required parameter value is missing!");
+				}
+			}
 		}
 
 		
@@ -220,8 +298,12 @@ class FormRenderer {
 			throw new Exception("Invalid field type!");
 		}
 		//array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions]]);
-		$this->fields[$internalName] = [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions];
+		$this->fields[$internalName] = [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions, $accept, $required];
+		//error_log("FormRenderer.addField | fields: " . print_r($this->fields, true));
 	}
+
+	
+
 
 	//This string is added to the non-button type input fields as an extra security feature.
 	//With this it can be check, whether the post request belongs to the actual user.
@@ -378,6 +460,8 @@ class FormRenderer {
 				$title = $details[4];
 				$readonly  = $details[5];
 				$selectOptions = $details[6];
+				$accept = $details[7];
+				$required = $details[8];
 
 				$hiddenStyle = "";
 				if ($type === self::FT_HIDDEN) {
@@ -391,8 +475,10 @@ class FormRenderer {
 				
 				$titleToPrint = "";
 				$readonlyToPrint = "";
-				if (isset($title)) {
-					$titleToPrint = ' title="'. $title . '"';
+				$requiredToPrint = "";
+
+				if (isset($title) & strlen($title) > 0) {
+					$titleToPrint = ' title="'. $title . '" ';
 				}
 				if ($readonly) {
 					if ($type === self::FT_CHECKBOX) {
@@ -404,15 +490,18 @@ class FormRenderer {
 					
 					
 				}
+				if ($required) {
+					$requiredToPrint = " required ";
+				}
 				
 				if ($type === self::FT_TEXTAREA) {
-					if (isset($size)) {
+					if (isset($size) & strlen($size) > 0) {
 						$sizeToPrint = ' cols="'. $size . '" ';
 					}
-					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . ' >' . $value . '</textarea></div>';
+					echo '<div><textarea name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . $requiredToPrint . ' >' . $value . '</textarea></div>';
 				} else if ($type === self::FT_SELECT) {
 
-					echo '<div><select name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . ' >';
+					echo '<div><select name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . $requiredToPrint . ' >';
 					foreach ($selectOptions as $optionValue => $optionText) {
 						
 						if (isset($value) && $value === $optionValue) {
@@ -429,20 +518,35 @@ class FormRenderer {
 					if (isset($value) && $value instanceof DateTime) {
 						$valueToPrint = ' value="' . $value->format('Y-m-d\TH:i:s')  . '" ';
 					}
-					if (isset($size)) {
+					if (isset($size) & strlen($size) > 0) {
 						$sizeToPrint = ' size="'. $size . '" ';
 					}
 					
-					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $valueToPrint . $sizeToPrint . $titleToPrint . $readonlyToPrint  . '></div>';
-				} else {
-					if (isset($value)) {
+					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $valueToPrint . $sizeToPrint . $titleToPrint . $readonlyToPrint  . $requiredToPrint . '></div>';
+				} else if ($type === self::FT_FILE) {
+					$valueToPrint = "";
+					$acceptToPrint = "";
+					if (isset($value) & strlen($value) > 0) {
 						$valueToPrint = ' value="' . $value . '" ';
 					}
-					if (isset($size)) {
+					if (isset($size) & strlen($size) > 0) {
+						$sizeToPrint = ' size="'. $size . '" ';
+					}
+					if (isset($accept) & strlen($accept) > 0) {
+						$acceptToPrint = ' accept="' . $accept . '"';
+						error_log("FormRenderer.renderFields | accept: " . $accept);
+					}
+					
+					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $valueToPrint . $sizeToPrint . $titleToPrint . $readonlyToPrint  . $requiredToPrint . $acceptToPrint . '></div>';
+				} else {
+					if (isset($value) & strlen($value) > 0) {
+						$valueToPrint = ' value="' . $value . '" ';
+					}
+					if (isset($size)  & strlen($size) > 0) {
 						$sizeToPrint = ' size="'. $size . '" ';
 					}
 					
-					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $valueToPrint . $sizeToPrint . $titleToPrint . $readonlyToPrint  . '></div>';
+					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $valueToPrint . $sizeToPrint . $titleToPrint . $readonlyToPrint  . $requiredToPrint . '></div>';
 				}
 				echo '   </div>';
 				
