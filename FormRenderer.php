@@ -18,6 +18,10 @@ class FormRenderer {
 	private $styleClasses;
 	private $validStyleSources;
 	private $validFieldParameters;
+	private $fileFieldTypePresent = false;
+
+	private const FILE_UPLOAD_MAX_SIZE = 128000;
+
 	private const BT_SUBMIT = "S";
 	private const BT_OPTION = "O";
 	private const URL = "U";
@@ -171,7 +175,7 @@ class FormRenderer {
 			$elements = explode(",", $accept);
 			foreach($elements as $element) {
 				$result = $this->validAcceptParameterPart($element);
-				error_log("FormRenderer.validateAcceptParameter | result: " . $result);
+				//error_log("FormRenderer.validateAcceptParameter | result: " . $result);
 				if (!$result) {
 					return false;
 				}
@@ -184,16 +188,16 @@ class FormRenderer {
 	}
 	
 	private function validAcceptParameterPart($part) {
-		error_log("FormRenderer.validAcceptParameterPart | part: " . $part);
+		//error_log("FormRenderer.validAcceptParameterPart | part: " . $part);
 		foreach (self::ACCEPT_TYPES as $type) {
-			error_log("FormRenderer.validAcceptParameterPart | type: " . $type);
+			//error_log("FormRenderer.validAcceptParameterPart | type: " . $type);
 			if ($this->startsWith($part, $type)) {
 				return true;
 			}
 		}
 		if ($this->startsWith($part, ".") ) {
 			$substr = substr($part, 1);
-			error_log("FormRenderer.validAcceptParameterPart | substring: " . $substr);
+			//error_log("FormRenderer.validAcceptParameterPart | substring: " . $substr);
 			return  !preg_match('/\s/',$substr); 
 		}
 		return false;
@@ -296,6 +300,9 @@ class FormRenderer {
 		}
 		if (!in_array($type, $this->validFieldTypes)) {
 			throw new Exception("Invalid field type!");
+		}
+		if ($type === self::FT_FILE) {
+			$this->fileFieldTypePresent = true;
 		}
 		//array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions]]);
 		$this->fields[$internalName] = [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions, $accept, $required];
@@ -408,7 +415,14 @@ class FormRenderer {
 		$buttonAreaStyle = $this->getStyle(self::STYLE_BUTTON_AREA);
 		$footerAreaStyle = $this->getStyle(self::STYLE_FORM_FOOTER);
 
-		echo '<form method="POST" action="' . $postData[self::URL] . '" name="' . $this->formName . '"' . $id . ' class="' . $formStyle . '">';
+		$encypeToRender = "";
+
+		if ($this->fileFieldTypePresent) {
+			//if file upload is used this enctype should be set
+			$encypeToRender = 'enctype="multipart/form-data"';
+		}
+
+		echo '<form method="POST" action="' . $postData[self::URL] . '" name="' . $this->formName . '"' . $id . ' class="' . $formStyle . '"' . $encypeToRender . '" >';
 		if (isset($this->headerText)) {
 			echo '   <h2 class="' . $formHeaderStyle . '">' . $this->headerText . '</h2>';
 		}
@@ -451,6 +465,9 @@ class FormRenderer {
 	private function renderFields($postfix,  $fieldAreaStyle) {
 		if (isset($this->fields) && count($this->fields) > 0) {
 			echo '   <div class="' . $fieldAreaStyle . '">';
+			if ($this->fileFieldTypePresent) {
+				echo '<div visibility="hidden"><input type="hidden" name="MAX_FILE_SIZE' . $postfix .'" value="' . self::FILE_UPLOAD_MAX_SIZE . '" /></div>';
+			}
 			
 			foreach ($this->fields as $name => $details) { 
 				$label = $details[0];
@@ -524,6 +541,7 @@ class FormRenderer {
 					
 					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $valueToPrint . $sizeToPrint . $titleToPrint . $readonlyToPrint  . $requiredToPrint . '></div>';
 				} else if ($type === self::FT_FILE) {
+					
 					$valueToPrint = "";
 					$acceptToPrint = "";
 					if (isset($value) & strlen($value) > 0) {
