@@ -151,3 +151,15 @@ $cp->setValue("Name1", "ValueTo Display");
 
 $cp->render();
 ```
+
+## setting required property for a field
+
+You can use the FP_REQUIRED option to set a field required:
+```	
+$fieldOptions = [
+	FormRenderer::FP_REQUIRED => "true"
+];
+$fr = new FormRenderer("test");
+$fr->addField("label", "fieldName", FormRenderer::FT_FILE, $fieldOptions);
+```
+the field "fieldName" will be required.
