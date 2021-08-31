@@ -375,7 +375,7 @@ class FormRenderer {
 
 	public function setValue($fieldName, $value) {
 		if (!array_key_exists($fieldName, $this->fields)) {
-			error_log("FormRenderer.setValue || Unknown field name: " . $fieldName);
+			//error_log("FormRenderer.setValue || Unknown field name: " . $fieldName);
 			throw new Exception("Unknown field name: " . $fieldName);
 		}
 		
@@ -468,7 +468,7 @@ class FormRenderer {
 			if ($this->fileFieldTypePresent) {
 				echo '<div visibility="hidden"><input type="hidden" name="MAX_FILE_SIZE' . $postfix .'" value="' . self::FILE_UPLOAD_MAX_SIZE . '" /></div>';
 			}
-			
+			//error_log("FormRenderer.renderFields || fields: " . print_r($this->fields, true));
 			foreach ($this->fields as $name => $details) { 
 				$label = $details[0];
 				$type = $details[1];
@@ -511,6 +511,9 @@ class FormRenderer {
 					$requiredToPrint = " required ";
 				}
 				
+
+				//error_log("FormRenderer.renderFields || value: " . print_r($value, true));
+
 				if ($type === self::FT_TEXTAREA) {
 					if (isset($size) & strlen($size) > 0) {
 						$sizeToPrint = ' cols="'. $size . '" ';
@@ -544,6 +547,7 @@ class FormRenderer {
 					
 					$valueToPrint = "";
 					$acceptToPrint = "";
+					$sizeToPrint = "";
 					if (isset($value) & strlen($value) > 0) {
 						$valueToPrint = ' value="' . $value . '" ';
 					}
@@ -552,11 +556,13 @@ class FormRenderer {
 					}
 					if (isset($accept) & strlen($accept) > 0) {
 						$acceptToPrint = ' accept="' . $accept . '"';
-						error_log("FormRenderer.renderFields | accept: " . $accept);
+						//error_log("FormRenderer.renderFields | accept: " . $accept);
 					}
 					
 					echo '<div><input type="' . $type . '" name= "' . $name . $postfix . '" ' . $valueToPrint . $sizeToPrint . $titleToPrint . $readonlyToPrint  . $requiredToPrint . $acceptToPrint . '></div>';
 				} else {
+					$valueToPrint = "";
+					$sizeToPrint = "";
 					if (isset($value) & strlen($value) > 0) {
 						$valueToPrint = ' value="' . $value . '" ';
 					}
