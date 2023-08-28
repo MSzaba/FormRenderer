@@ -106,7 +106,8 @@ We use the addField three times here. First we add a hidden field to contain an 
 - FormRenderer::FP_SIZE
 - FormRenderer::FP_VALUE
 - FormRenderer::FP_READONLY
-- FormRenderer::FP_SELECT_OPTIONS
+- FormRenderer::FP_SELECT_OPTIONS -for select ui element
+- ForRenderer::FP_PRESELECTED_VALUE - for select ui element
 
 The fill the related HTML parameters of the tag. In the example all 3 are used
 
