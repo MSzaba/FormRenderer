@@ -77,6 +77,7 @@ class FormRenderer {
 	public const FP_SELECT_OPTIONS = "selectoptions";
 	public const FP_ACCEPT= "accept";
 	public const FP_REQUIRED = "required";
+	public const FP_PRESELECTED_VALUE = "preselected";
 
 	public function __construct($formName, $formId = null) {
 
@@ -227,6 +228,7 @@ class FormRenderer {
 		$selectoptions = null;
 		$accept = "";
 		$required = false;
+		$selectedValue = null;
 
 
 		if (isset($optionalParameters)) {
@@ -292,6 +294,12 @@ class FormRenderer {
 					throw new Exception("Required parameter value is missing!");
 				}
 			}
+			if(isset($optionalParameters[self::FP_PRESELECTED_VALUE])) {
+				$selectedValue = $optionalParameters[self::FP_PRESELECTED_VALUE];
+				if ($selectedValue == null) {
+					throw new Exception("Selected value parameter is missing!");
+				}
+			}
 		}
 
 		
@@ -305,7 +313,7 @@ class FormRenderer {
 			$this->fileFieldTypePresent = true;
 		}
 		//array_push($this->fields, [$internalName => [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions]]);
-		$this->fields[$internalName] = [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions, $accept, $required];
+		$this->fields[$internalName] = [$internalLabel, $type, $internalValue, $size, $title, $readonly, $selectoptions, $accept, $required, $selectedValue];
 		//error_log("FormRenderer.addField | fields: " . print_r($this->fields, true));
 	}
 
@@ -479,6 +487,7 @@ class FormRenderer {
 				$selectOptions = $details[6];
 				$accept = $details[7];
 				$required = $details[8];
+				$selectedValue = $details[9];
 
 				$hiddenStyle = "";
 				if ($type === self::FT_HIDDEN) {
@@ -524,7 +533,7 @@ class FormRenderer {
 					echo '<div><select name= "' . $name . $postfix . '"' . $sizeToPrint . $titleToPrint . $readonlyToPrint . $requiredToPrint . ' >';
 					foreach ($selectOptions as $optionValue => $optionText) {
 						
-						if (isset($value) && $value === $optionValue) {
+						if (isset($selectedValue) && $selectedValue === $optionValue) {
 							$selected = " selected "; 
 							
 						} else {
